@@ -1,5 +1,5 @@
 import app from "../src/api/index.js";
 import { handle } from "hono/vercel";
 
-export const config = { runtime: "nodejs20.x" };
+export const config = { runtime: "nodejs" };
 export default handle(app);
