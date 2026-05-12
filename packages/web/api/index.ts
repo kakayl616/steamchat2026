@@ -3,7 +3,7 @@ process.env.NODE_ENV = process.env.NODE_ENV || "production";
 
 export default async function handler(req, res) {
   try {
-    const { default: app } = await import("../src/api/index.js");
+    const { default: app } = await import("../api-dist/index.js");
 
     const host = req.headers.host || "localhost";
     const proto = req.headers["x-forwarded-proto"] || "https";
@@ -36,15 +36,9 @@ export default async function handler(req, res) {
     res.send(await response.text());
   } catch (err) {
     console.error("API Error:", err?.message, err?.stack);
-    res.status(500).json({ 
-      error: "Internal server error", 
+    res.status(500).json({
+      error: "Internal server error",
       message: err?.message,
-      env_check: {
-        has_db_url: !!process.env.DATABASE_URL,
-        has_db_token: !!process.env.DATABASE_AUTH_TOKEN,
-        has_steam_key: !!process.env.STEAM_API_KEY,
-        has_invite_code: !!process.env.INVITE_CODE,
-      }
     });
   }
 }
