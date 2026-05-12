@@ -8,7 +8,8 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "dist-electron/**", ".expo/**"]
+      "outputs": ["dist/**", "dist-electron/**", ".expo/**"],
+      "passThroughEnv": ["DATABASE_URL", "DATABASE_AUTH_TOKEN", "STEAM_API_KEY", "INVITE_CODE"]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"],
