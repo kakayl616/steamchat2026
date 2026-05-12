@@ -1,44 +1,9 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-const hono_1 = require("hono");
-const cors_1 = require("hono/cors");
-const index_1 = require("./database/index");
-const schema = __importStar(require("./database/schema"));
-const drizzle_orm_1 = require("drizzle-orm");
-const nanoid_1 = require("nanoid");
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { db } from "./database/index.js";
+import * as schema from "./database/schema.js";
+import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 // ── helpers ──────────────────────────────────────────────────────────────────
 function parseJson(val, fallback) {
     try {
@@ -59,9 +24,9 @@ function serializeCase(c) {
 // ── auth middleware ───────────────────────────────────────────────────────────
 const INVITE_CODE = process.env.INVITE_CODE ?? "steampanel2024";
 // ── app ───────────────────────────────────────────────────────────────────────
-const app = new hono_1.Hono()
+const app = new Hono()
     .basePath("api")
-    .use((0, cors_1.cors)({ origin: (origin) => origin ?? "*", credentials: true }))
+    .use(cors({ origin: (origin) => origin ?? "*", credentials: true }))
     .get("/health", (c) => c.json({ status: "ok" }, 200))
     // Auth
     .post("/auth/login", async (c) => {
@@ -111,8 +76,8 @@ const app = new hono_1.Hono()
     // Cases — create
     .post("/cases", async (c) => {
     const body = await c.req.json();
-    const id = (0, nanoid_1.nanoid)(12);
-    const [newCase] = await index_1.db
+    const id = nanoid(12);
+    const [newCase] = await db
         .insert(schema.cases)
         .values({
         id,
@@ -134,13 +99,13 @@ const app = new hono_1.Hono()
 })
     // Cases — list
     .get("/cases", async (c) => {
-    const all = await index_1.db.select().from(schema.cases).orderBy(schema.cases.createdAt);
+    const all = await db.select().from(schema.cases).orderBy(schema.cases.createdAt);
     return c.json({ cases: all.map(serializeCase) }, 200);
 })
     // Cases — get single
     .get("/cases/:id", async (c) => {
     const id = c.req.param("id");
-    const [found] = await index_1.db.select().from(schema.cases).where((0, drizzle_orm_1.eq)(schema.cases.id, id));
+    const [found] = await db.select().from(schema.cases).where(eq(schema.cases.id, id));
     if (!found)
         return c.json({ error: "Case not found" }, 404);
     return c.json({ case: serializeCase(found) }, 200);
@@ -168,10 +133,10 @@ const app = new hono_1.Hono()
         updateData.level = body.level;
     if (body.gamesCount !== undefined)
         updateData.gamesCount = body.gamesCount;
-    const [updated] = await index_1.db
+    const [updated] = await db
         .update(schema.cases)
         .set(updateData)
-        .where((0, drizzle_orm_1.eq)(schema.cases.id, id))
+        .where(eq(schema.cases.id, id))
         .returning();
     if (!updated)
         return c.json({ error: "Case not found" }, 404);
@@ -180,7 +145,7 @@ const app = new hono_1.Hono()
     // Cases — delete
     .delete("/cases/:id", async (c) => {
     const id = c.req.param("id");
-    await index_1.db.delete(schema.cases).where((0, drizzle_orm_1.eq)(schema.cases.id, id));
+    await db.delete(schema.cases).where(eq(schema.cases.id, id));
     return c.json({ success: true }, 200);
 });
-exports.default = app;
+export default app;
